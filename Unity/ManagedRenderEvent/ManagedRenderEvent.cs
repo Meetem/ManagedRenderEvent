@@ -10,9 +10,9 @@ public delegate void RenderPluginDelegate(int eventId, IntPtr data);
 public static class ManagedRenderEvent
 {
     private static HashSet<RenderPluginDelegate> delegateHolder = new HashSet<RenderPluginDelegate>();
+    private const string _pluginName = "ManagedRenderEvent";
     
 #if UNITY_EDITOR
-    private const string _pluginName = "ManagedRenderEvent";
     private const int MaxCallsPerFrame = 8192;
     private static IntPtr renderCallbackPtr;
     

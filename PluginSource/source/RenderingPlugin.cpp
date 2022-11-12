@@ -19,7 +19,7 @@ typedef void* (UNITY_INTERFACE_API* mono_thread_attach_ptr)(void *domain);
 typedef void (UNITY_INTERFACE_API* mono_thread_detach_ptr)(void *domain);
 
 static mono_thread_attach_ptr thread_attach_ptr = nullptr;
-static void* domain;
+static void* domain = nullptr;
 
 extern "C" {
 	// If exported by a plugin, this function will be called when the plugin is loaded.
@@ -39,6 +39,13 @@ typedef struct {
 	void* addData;
 }NativeCallbackData;
 
+__forceinline static void AttachCurrentThread() {
+	if (thread_attach_ptr == nullptr || domain == nullptr)
+		return;
+
+	thread_attach_ptr(domain);
+}
+
 extern "C" UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API ManagedRenderEvent_SetMonoData(mono_thread_attach_ptr p2, void *dom) {
 	thread_attach_ptr = p2;
 	domain = dom;
@@ -47,30 +54,35 @@ extern "C" UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API ManagedRenderEvent_Se
 #define MAKE_EXPORT_CALL_0(sig, ret) extern "C" UNITY_INTERFACE_EXPORT ret UNITY_INTERFACE_API ManagedRenderEvent_Call_##sig(void* funcPtr) {\
 	if (funcPtr == nullptr) return (ret)0;\
 	typedef ret (UNITY_INTERFACE_API *CallbackFunc)();\
+	AttachCurrentThread();\
 	return ((CallbackFunc)funcPtr)();\
 }
 
 #define MAKE_EXPORT_CALL_1(sig, ret, t1) extern "C" UNITY_INTERFACE_EXPORT ret UNITY_INTERFACE_API ManagedRenderEvent_Call_##sig(void* funcPtr, t1 a) {\
 	if (funcPtr == nullptr) return (ret)0;\
 	typedef ret (UNITY_INTERFACE_API* CallbackFunc)(t1);\
+	AttachCurrentThread();\
 	return ((CallbackFunc)funcPtr)(a);\
 }
 
 #define MAKE_EXPORT_CALL_2(sig, ret, t1, t2) extern "C" UNITY_INTERFACE_EXPORT ret UNITY_INTERFACE_API ManagedRenderEvent_Call_##sig(void* funcPtr, t1 a, t2 b) {\
 	if (funcPtr == nullptr) return (ret)0;\
 	typedef ret (UNITY_INTERFACE_API* CallbackFunc)(t1, t2);\
+	AttachCurrentThread();\
 	return ((CallbackFunc)funcPtr)(a, b);\
 }
 
 #define MAKE_EXPORT_CALL_3(sig, ret, t1, t2, t3) extern "C" UNITY_INTERFACE_EXPORT ret UNITY_INTERFACE_API ManagedRenderEvent_Call_##sig(void* funcPtr, t1 a, t2 b, t3 c) {\
 	if (funcPtr == nullptr) return (ret)0;\
 	typedef ret (UNITY_INTERFACE_API* CallbackFunc)(t1, t2, t3);\
+	AttachCurrentThread();\
 	return ((CallbackFunc)funcPtr)(a, b, c);\
 }
 
 #define MAKE_EXPORT_CALL_4(sig, ret, t1, t2, t3, t4) extern "C" UNITY_INTERFACE_EXPORT ret UNITY_INTERFACE_API ManagedRenderEvent_Call_##sig(void* funcPtr, t1 a, t2 b, t3 c, t4 d) {\
 	if (funcPtr == nullptr) return (ret)0;\
 	typedef ret (UNITY_INTERFACE_API* CallbackFunc)(t1, t2, t3, t4);\
+	AttachCurrentThread();\
 	return ((CallbackFunc)funcPtr)(a, b, c, d);\
 }
 
@@ -79,12 +91,14 @@ typedef void* intptr;
 extern "C" UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API ManagedRenderEvent_Call_v(void* funcPtr) {
 	if (funcPtr == nullptr) return;
 	typedef void(UNITY_INTERFACE_API* CallbackFunc)();
+	AttachCurrentThread();
 	return ((CallbackFunc)funcPtr)();
 }
 
 extern "C" UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API ManagedRenderEvent_Call_vp(void* funcPtr, void *a) {
 	if (funcPtr == nullptr) return;
 	typedef void(UNITY_INTERFACE_API* CallbackFunc)(void*);
+	AttachCurrentThread();
 	return ((CallbackFunc)funcPtr)(a);
 }
 
@@ -102,9 +116,6 @@ MAKE_EXPORT_CALL_1(fp, float, intptr)
 MAKE_EXPORT_CALL_1(dp, double, intptr)
 
 static void UNITY_INTERFACE_API ManagedRenderEvent_MakeCall(int32_t eventId, void *data) {
-	if (thread_attach_ptr == nullptr)
-		return;
-
 	if (data == nullptr)
 		return;
 	
@@ -112,7 +123,7 @@ static void UNITY_INTERFACE_API ManagedRenderEvent_MakeCall(int32_t eventId, voi
 	if (cbData->callbackPtr == nullptr)
 		return;
 
-	auto thread = thread_attach_ptr(domain);
+	AttachCurrentThread();
 	cbData->callbackPtr(cbData->eventId, cbData->addData);
 }
 
