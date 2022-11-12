@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="..\..\source\PlatformBase.h" />
+    <ClInclude Include="..\..\source\Unity\IUnityInterface.h">
+      <Filter>Unity</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\source\RenderingPlugin.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Unity">
+      <UniqueIdentifier>{c01468d4-90d4-4d19-9a9b-ee2f1b5e9083}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\source\RenderingPlugin.def">
+      <Filter>Unity</Filter>
+    </None>
+  </ItemGroup>
+</Project>

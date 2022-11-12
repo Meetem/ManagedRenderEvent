@@ -1,0 +1,12 @@
+*.sdf
+*.vcxproj.user
+*.VC.opendb
+.vs
+
+xcuserdata
+*.xcworkspace
+xcshareddata
+
+WSATestCertificate.pfx*
+
+PluginSource/build

@@ -1,0 +1,4 @@
+// Hint files help the Visual Studio IDE interpret Visual C++ identifiers
+// such as names of functions and macros.
+// For more information see https://go.microsoft.com/fwlink/?linkid=865984
+#define MAKE_EXPORT_CALL_0(sig, ret) extern "C" UNITY_INTERFACE_EXPORT ret UNITY_INTERFACE_API ManagedRenderEvent_Call_##sig(void* funcPtr) { if (funcPtr == nullptr) return; typedef ret (UNITY_INTERFACE_API *CallbackFunc)(); return ((CallbackFunc)funcPtr)();}
