@@ -1,0 +1,2 @@
+C:\Users\alex\Documents\GitHub\Bakanov\MultiDrawInstanced\ManagedRenderEvent\PluginSource\build\x64\Release\ManagedRenderEvent.dll
+C:\Users\alex\Documents\GitHub\Bakanov\TestVertexWrite\ManagedRenderEvent\PluginSource\build\x64\Release\ManagedRenderEvent.dll
