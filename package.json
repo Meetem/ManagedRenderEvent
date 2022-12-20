@@ -14,5 +14,6 @@
         "name": "Alex Bakanov",
         "email": "hawk0044@gmail.com",
         "url": "https://github.com/Meetem"
-    }
+    },
+    "hideInEditor": false
 }
