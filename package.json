@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "Native Code plugin for safe calling managed method with IssuePluginEventAndData within unity editor",
     "displayName": "ManagedRenderEvent",
-    "unity": "2019.0",
+    "unity": "2019.1.0",
     "license": "MIT",
     "keywords": [
         "commandbuffer",
