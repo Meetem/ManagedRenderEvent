@@ -1,0 +1,16 @@
+{
+    "name": "meetem.managedrenderevent",
+    "references": [],
+    "includePlatforms": [
+        "Editor",
+        "WindowsStandalone64"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
