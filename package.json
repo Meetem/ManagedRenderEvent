@@ -1,5 +1,5 @@
 {
-    "name": "ManagedRenderEvent",
+    "name": "com.meetem.managedrenderevent",
     "version": "1.0.0",
     "description": "Native Code plugin for safe calling managed method with IssuePluginEventAndData within unity editor",
     "displayName": "ManagedRenderEvent",
