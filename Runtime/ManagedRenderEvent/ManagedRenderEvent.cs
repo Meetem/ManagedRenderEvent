@@ -53,6 +53,9 @@ public static class ManagedRenderEvent
     [DllImport(_pluginName)]
     private static extern IntPtr ManagedRenderEvent_GetCallback();
 
+    [DllImport(_pluginName)]
+    private static extern IntPtr ManagedRenderEvent_GetAttachCallback();
+
     private static RenderPluginDelegate renderCallbackDelegate;
     
     static unsafe ManagedRenderEvent()
@@ -71,6 +74,9 @@ public static class ManagedRenderEvent
         renderCallbackPtr = ManagedRenderEvent_GetCallback();
         renderCallbackDelegate = Marshal.GetDelegateForFunctionPointer<RenderPluginDelegate>(renderCallbackPtr);
         ManagedRenderEvent_SetMonoData(mono_thread_attach, mono_get_root_domain());
+        
+        //Auto-bind
+        GL.IssuePluginEvent(ManagedRenderEvent_GetAttachCallback(), 0);
     }
 #else
     public static unsafe void Initialize()

@@ -11,6 +11,7 @@ typedef void* MonoObjectPtr;
 typedef void* RuntimeMethodInfoPtr;
 
 //typedef void (UNITY_INTERFACE_API *PluginCallback)(int32_t eventId, void *data);
+typedef void (UNITY_INTERFACE_API* PluginCallbackWithoutData)(int32_t eventId);
 typedef void (UNITY_INTERFACE_API* PluginCallback)(int32_t eventId, void* data);
 typedef void (UNITY_INTERFACE_API* PluginCallbackNative)(int eventId, void *data);
 
@@ -125,6 +126,14 @@ static void UNITY_INTERFACE_API ManagedRenderEvent_MakeCall(int32_t eventId, voi
 
 	AttachCurrentThread();
 	cbData->callbackPtr(cbData->eventId, cbData->addData);
+}
+
+static void UNITY_INTERFACE_API ManagedRenderEvent_Attach(int32_t eventId) {
+	AttachCurrentThread();
+}
+
+extern "C" UNITY_INTERFACE_EXPORT PluginCallbackWithoutData UNITY_INTERFACE_API ManagedRenderEvent_GetAttachCallback() {
+	return ManagedRenderEvent_Attach;
 }
 
 extern "C" UNITY_INTERFACE_EXPORT PluginCallback UNITY_INTERFACE_API ManagedRenderEvent_GetCallback() {
