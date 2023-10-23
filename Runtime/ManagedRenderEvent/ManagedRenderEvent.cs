@@ -79,7 +79,7 @@ namespace ManagedRender
         public static bool IsInitialized => true;
         public static bool IsFullyInitialized => true;
 
-        public static unsafe void Initialize()
+        public static void Initialize()
         {
             
         }
