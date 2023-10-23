@@ -5,6 +5,10 @@
 #include <math.h>
 #include <vector>
 
+#ifndef __forceinline
+#define __forceinline
+#endif
+
 // --------------------------------------------------------------------------
 // UnitySetInterfaces
 typedef void* MonoObjectPtr;
