@@ -31,7 +31,7 @@ namespace ManagedRender
         private static Action completeInitCallback;
         
         [DllImport(_pluginName)]
-        private static extern unsafe void ManagedRenderEvent_SetMonoData(MonoAttachThreadDelegate thread_attach, IntPtr domain, IntPtr onSetupCallback);
+        private static extern void ManagedRenderEvent_SetMonoData(MonoAttachThreadDelegate thread_attach, IntPtr domain, IntPtr onSetupCallback);
         
         [DllImport(_pluginName)]
         private static extern IntPtr ManagedRenderEvent_GetAttachCallback();
@@ -40,13 +40,13 @@ namespace ManagedRender
         private static extern IntPtr ManagedRenderEvent_GetAttachForTextureUpdate();
         
         private static CommandBuffer bindEvents;
-        static unsafe ManagedRenderEvent()
+        static ManagedRenderEvent()
         {
             Initialize();
         }
         
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        public static unsafe void Initialize()
+        public static void Initialize()
         {
             if (_initialized)
                 return;
@@ -86,7 +86,7 @@ namespace ManagedRender
     #endif
         
     #if UNITY_EDITOR
-        public static unsafe void IssuePluginEventAndData(this CommandBuffer cmdBuffer, RenderPluginDelegate @delegate, int eventId, IntPtr data)
+        public static void IssuePluginEventAndData(this CommandBuffer cmdBuffer, RenderPluginDelegate @delegate, int eventId, IntPtr data)
         {
             if (!@delegate.Method.IsStatic)
                 delegateHolder.Add(@delegate);
@@ -95,7 +95,7 @@ namespace ManagedRender
             cmdBuffer.IssuePluginEventAndData(funcPtr, eventId, data);
         }
         
-        public static unsafe void IssuePluginCustomTextureUpdateV2(this CommandBuffer cmdBuffer, CustomTextureUpdateV2 @delegate, Texture texture, uint userData)
+        public static void IssuePluginCustomTextureUpdateV2(this CommandBuffer cmdBuffer, CustomTextureUpdateV2 @delegate, Texture texture, uint userData)
         {
             if (!@delegate.Method.IsStatic)
                 delegateHolder2.Add(@delegate);
