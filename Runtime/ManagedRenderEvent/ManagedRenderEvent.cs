@@ -19,7 +19,7 @@ namespace ManagedRender
         private static volatile bool _initialized = false;
         private static volatile bool _fullyInitialized = false;
         public static bool IsInitialized => _initialized;
-        public static bool IsFullyInitialized => _fullyInitialized;
+        public static bool IsFullyInitialized => _initialized && _fullyInitialized;
         
         [DllImport("__Internal")]
         public static extern IntPtr mono_thread_attach(IntPtr domain);
@@ -45,12 +45,13 @@ namespace ManagedRender
             Initialize();
         }
         
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         public static unsafe void Initialize()
         {
             if (_initialized)
                 return;
 
-            _initialized = true;
+            _fullyInitialized = false;
             completeInitCallback = new Action(() =>
             {
                 Debug.Log($"ManagedRenderEvent Initialized");
@@ -72,6 +73,7 @@ namespace ManagedRender
             
             bindEvents.IssuePluginEvent(ManagedRenderEvent_GetAttachCallback(), 1);
             Graphics.ExecuteCommandBuffer(bindEvents);
+            _initialized = true;
         }
     #else
         public static bool IsInitialized => true;
