@@ -6,5 +6,6 @@ LIBRARY
 EXPORTS
    UnityPluginLoad
    UnityPluginUnload
-   ManagedRenderEvent_GetCallback
    ManagedRenderEvent_SetMonoData
+   ManagedRenderEvent_GetAttachCallback
+   ManagedRenderEvent_GetAttachForTextureUpdate

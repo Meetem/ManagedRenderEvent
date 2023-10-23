@@ -1,10 +1,8 @@
 {
     "name": "meetem.managedrenderevent",
+    "rootNamespace": "",
     "references": [],
-    "includePlatforms": [
-        "Editor",
-        "WindowsStandalone64"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": true,
     "overrideReferences": false,

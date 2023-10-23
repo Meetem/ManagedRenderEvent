@@ -1,173 +1,106 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public delegate void RenderPluginDelegate(int eventId, IntPtr data);
-
-public static class ManagedRenderEvent
+namespace ManagedRender
 {
-    private static HashSet<RenderPluginDelegate> delegateHolder = new HashSet<RenderPluginDelegate>();
-    private const string _pluginName = "ManagedRenderEvent";
-    
-#if UNITY_EDITOR
-    private const int MaxCallsPerFrame = 8192;
-    private static IntPtr renderCallbackPtr;
-    
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct NativeCallbackData{
-        internal IntPtr runtimeMethodPointer;
-        internal int eventId;
-        internal int __unused;
-        internal IntPtr addData;
-    };
+    public delegate void RenderPluginDelegate(int eventId, IntPtr data);
 
-    private static NativeCallbackData[] callbackDatas = new NativeCallbackData[MaxCallsPerFrame];
-    private static long _currentData = 0;
-    private static ulong gcHandle;
-    private static unsafe NativeCallbackData* basePtr;
-    private static bool _initialized = false;
-    
-    private static unsafe NativeCallbackData* GetData(in NativeCallbackData data)
+    public static class ManagedRenderEvent
     {
-        var prev = _currentData;
-        _currentData = (_currentData + 1) % callbackDatas.Length;
+        private static HashSet<RenderPluginDelegate> delegateHolder = new HashSet<RenderPluginDelegate>();
+        private static HashSet<CustomTextureUpdateV2> delegateHolder2 = new HashSet<CustomTextureUpdateV2>();
         
-        var ptr = basePtr + prev;
-        *ptr = data;
-        return ptr;
-    }
-    
-    [DllImport("__Internal")]
-    public static extern unsafe void* mono_thread_attach(void *domain);
-
-    [DllImport("__Internal")]
-    public static extern unsafe void* mono_get_root_domain();
-    private unsafe delegate void* MonoAttachThreadDelegate(void*domain);
-    
-    [DllImport(_pluginName)]
-    private static extern unsafe void ManagedRenderEvent_SetMonoData(MonoAttachThreadDelegate thread_attach, void* domain);
-    
-    [DllImport(_pluginName)]
-    private static extern IntPtr ManagedRenderEvent_GetCallback();
-
-    [DllImport(_pluginName)]
-    private static extern IntPtr ManagedRenderEvent_GetAttachCallback();
-
-    private static RenderPluginDelegate renderCallbackDelegate;
-    
-    static unsafe ManagedRenderEvent()
-    {
-        basePtr = (NativeCallbackData*)UnsafeUtility.PinGCArrayAndGetDataAddress(callbackDatas, out gcHandle);
-        _currentData = 0;
-        Initialize();
-    }
-    
-    public static unsafe void Initialize()
-    {
-        if (_initialized)
-            return;
-
-        _initialized = true;
-        renderCallbackPtr = ManagedRenderEvent_GetCallback();
-        renderCallbackDelegate = Marshal.GetDelegateForFunctionPointer<RenderPluginDelegate>(renderCallbackPtr);
-        ManagedRenderEvent_SetMonoData(mono_thread_attach, mono_get_root_domain());
+        private const string _pluginName = "ManagedRenderEvent";
+            
+    #if UNITY_EDITOR
+        private static volatile bool _initialized = false;
+        private static volatile bool _fullyInitialized = false;
+        public static bool IsInitialized => _initialized;
+        public static bool IsFullyInitialized => _fullyInitialized;
         
-        //Auto-bind
-        GL.IssuePluginEvent(ManagedRenderEvent_GetAttachCallback(), 0);
-    }
-#else
-    public static unsafe void Initialize()
-    {
-        
-    }
-#endif
-    
-#if UNITY_EDITOR
-    public static unsafe void IssuePluginEventAndData(this CommandBuffer cmdBuffer, RenderPluginDelegate @delegate, int eventId, IntPtr data)
-    {
-        Initialize();
-        
-        if (!@delegate.Method.IsStatic)
-            delegateHolder.Add(@delegate);
+        [DllImport("__Internal")]
+        public static extern IntPtr mono_thread_attach(IntPtr domain);
 
-        var d = new NativeCallbackData
+        [DllImport("__Internal")]
+        public static extern IntPtr mono_get_root_domain();
+        private delegate IntPtr MonoAttachThreadDelegate(IntPtr domain);
+
+        private static Action completeInitCallback;
+        
+        [DllImport(_pluginName)]
+        private static extern unsafe void ManagedRenderEvent_SetMonoData(MonoAttachThreadDelegate thread_attach, IntPtr domain, IntPtr onSetupCallback);
+        
+        [DllImport(_pluginName)]
+        private static extern IntPtr ManagedRenderEvent_GetAttachCallback();
+
+        [DllImport(_pluginName)]
+        private static extern IntPtr ManagedRenderEvent_GetAttachForTextureUpdate();
+        
+        private static CommandBuffer bindEvents;
+        static unsafe ManagedRenderEvent()
         {
-            eventId = eventId,
-            runtimeMethodPointer = Marshal.GetFunctionPointerForDelegate(@delegate),
-            addData = data
-        };
+            Initialize();
+        }
         
-        cmdBuffer.IssuePluginEventAndData(renderCallbackPtr, 0, new IntPtr(GetData(in d)));
-    }
-    
-    public static unsafe void JustCall(RenderPluginDelegate @delegate, int eventId, IntPtr data)
-    {
-        var d = new NativeCallbackData
+        public static unsafe void Initialize()
         {
-            eventId = eventId,
-            runtimeMethodPointer = Marshal.GetFunctionPointerForDelegate(@delegate),
-            addData = data
-        };
+            if (_initialized)
+                return;
 
-        var dataPtr = (IntPtr)GetData(in d);
-        renderCallbackDelegate(0, dataPtr);
+            _initialized = true;
+            completeInitCallback = new Action(() =>
+            {
+                Debug.Log($"ManagedRenderEvent Initialized");
+                _fullyInitialized = true;
+            });
+            
+            ManagedRenderEvent_SetMonoData(mono_thread_attach, mono_get_root_domain(), 
+                Marshal.GetFunctionPointerForDelegate(completeInitCallback));
+            
+            //Auto-bind
+            bindEvents = new CommandBuffer();
+            bindEvents.IssuePluginEvent(ManagedRenderEvent_GetAttachCallback(), 0);
+            bindEvents.IssuePluginCustomTextureUpdateV2(ManagedRenderEvent_GetAttachForTextureUpdate(), Texture2D.whiteTexture, 0);
+            bindEvents.IssuePluginCustomBlit(ManagedRenderEvent_GetAttachForTextureUpdate(), 0, 
+                BuiltinRenderTextureType.CurrentActive,
+                BuiltinRenderTextureType.CurrentActive,
+                0, 0
+                );
+            
+            bindEvents.IssuePluginEvent(ManagedRenderEvent_GetAttachCallback(), 1);
+            Graphics.ExecuteCommandBuffer(bindEvents);
+        }
+    #else
+        public static bool IsInitialized => true;
+        public static bool IsFullyInitialized => true;
+
+        public static unsafe void Initialize()
+        {
+            
+        }
+    #endif
+        
+    #if UNITY_EDITOR
+        public static unsafe void IssuePluginEventAndData(this CommandBuffer cmdBuffer, RenderPluginDelegate @delegate, int eventId, IntPtr data)
+        {
+            if (!@delegate.Method.IsStatic)
+                delegateHolder.Add(@delegate);
+
+            var funcPtr = Marshal.GetFunctionPointerForDelegate(@delegate);
+            cmdBuffer.IssuePluginEventAndData(funcPtr, eventId, data);
+        }
+        
+        public static unsafe void IssuePluginCustomTextureUpdateV2(this CommandBuffer cmdBuffer, CustomTextureUpdateV2 @delegate, Texture texture, uint userData)
+        {
+            if (!@delegate.Method.IsStatic)
+                delegateHolder2.Add(@delegate);
+
+            var funcPtr = Marshal.GetFunctionPointerForDelegate(@delegate);
+            cmdBuffer.IssuePluginCustomTextureUpdateV2(funcPtr, texture, userData);
+        }
+    #endif
     }
-#else
-    public static unsafe void IssuePluginEventAndData(this CommandBuffer cmdBuffer, RenderPluginDelegate @delegate, int eventId, IntPtr data)
-    {
-        if (!@delegate.Method.IsStatic)
-            delegateHolder.Add(@delegate);
-
-        var funcPtr = Marshal.GetFunctionPointerForDelegate(@delegate);
-        cmdBuffer.IssuePluginEventAndData(funcPtr, eventId, data);
-    }
-    
-    public static unsafe void JustCall(RenderPluginDelegate @delegate, int eventId, IntPtr data)
-    {
-        @delegate(eventId, data);
-    }
-#endif
-    
-    #region No Args
-    [DllImport(_pluginName)]
-    public static extern unsafe void ManagedRenderEvent_Call_v(void *funcPtr);
-
-    [DllImport(_pluginName)]
-    public static extern unsafe void *ManagedRenderEvent_Call_p(void *funcPtr);
-
-    [DllImport(_pluginName)]
-    public static extern unsafe int ManagedRenderEvent_Call_i(void *funcPtr);
-
-    [DllImport(_pluginName)]
-    public static extern unsafe long ManagedRenderEvent_Call_l(void *funcPtr);
-
-    [DllImport(_pluginName)]
-    public static extern unsafe float ManagedRenderEvent_Call_f(void *funcPtr);
-
-    [DllImport(_pluginName)]
-    public static extern unsafe double ManagedRenderEvent_Call_d(void *funcPtr);
-    #endregion
-    
-    #region 1 arg
-    [DllImport(_pluginName)]
-    public static extern unsafe void ManagedRenderEvent_Call_vp(void *funcPtr, void *a);
-
-    [DllImport(_pluginName)]
-    public static extern unsafe void *ManagedRenderEvent_Call_pp(void *funcPtr, void *a);
-
-    [DllImport(_pluginName)]
-    public static extern unsafe int ManagedRenderEvent_Call_ip(void *funcPtr, void *a);
-
-    [DllImport(_pluginName)]
-    public static extern unsafe long ManagedRenderEvent_Call_lp(void *funcPtr, void *a);
-
-    [DllImport(_pluginName)]
-    public static extern unsafe float ManagedRenderEvent_Call_fp(void *funcPtr, void *a);
-
-    [DllImport(_pluginName)]
-    public static extern unsafe double ManagedRenderEvent_Call_dp(void *funcPtr, void *a);
-    #endregion
 }

@@ -12,7 +12,9 @@ typedef void* RuntimeMethodInfoPtr;
 
 //typedef void (UNITY_INTERFACE_API *PluginCallback)(int32_t eventId, void *data);
 typedef void (UNITY_INTERFACE_API* PluginCallbackWithoutData)(int32_t eventId);
+typedef void (UNITY_INTERFACE_API* PluginCallbackUpdate)(int32_t eventId, void *data);
 typedef void (UNITY_INTERFACE_API* PluginCallback)(int32_t eventId, void* data);
+typedef void (UNITY_INTERFACE_API* InitializedCallback)();
 typedef void (UNITY_INTERFACE_API* PluginCallbackNative)(int eventId, void *data);
 
 typedef void* (UNITY_INTERFACE_API *mono_runtime_invoke_ptr)(RuntimeMethodInfoPtr method, MonoObjectPtr classInstance, void** args, MonoObjectPtr* exception);
@@ -20,6 +22,7 @@ typedef void* (UNITY_INTERFACE_API* mono_thread_attach_ptr)(void *domain);
 typedef void (UNITY_INTERFACE_API* mono_thread_detach_ptr)(void *domain);
 
 static mono_thread_attach_ptr thread_attach_ptr = nullptr;
+static InitializedCallback initialized_callback = nullptr;
 static void* domain = nullptr;
 
 extern "C" {
@@ -27,18 +30,12 @@ extern "C" {
 	void UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API UnityPluginLoad(IUnityInterfaces* unityInterfaces) {
 
 	}
+
 	// If exported by a plugin, this function will be called when the plugin is about to be unloaded.
 	void UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API UnityPluginUnload() {
 
 	}
 }
-
-typedef struct {
-	PluginCallbackNative callbackPtr;
-	int32_t eventId;
-	int32_t __unused;
-	void* addData;
-}NativeCallbackData;
 
 __forceinline static void AttachCurrentThread() {
 	if (thread_attach_ptr == nullptr || domain == nullptr)
@@ -47,9 +44,39 @@ __forceinline static void AttachCurrentThread() {
 	thread_attach_ptr(domain);
 }
 
-extern "C" UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API ManagedRenderEvent_SetMonoData(mono_thread_attach_ptr p2, void *dom) {
+extern "C" UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API ManagedRenderEvent_SetMonoData(mono_thread_attach_ptr p2, void *dom, InitializedCallback initCallback) {
 	thread_attach_ptr = p2;
 	domain = dom;
+	initialized_callback = initCallback;
+}
+
+typedef void* intptr;
+
+static void UNITY_INTERFACE_API ManagedRenderEvent_Attach(int32_t eventId) {
+	AttachCurrentThread();
+
+	if(eventId == 1){
+		if(initialized_callback != nullptr){
+			initialized_callback();
+		}
+	}
+}
+
+static void UNITY_INTERFACE_API ManagedRenderEvent_AttachTextureUpdate(int32_t eventId, void *data) {
+	AttachCurrentThread();
+}
+
+extern "C" UNITY_INTERFACE_EXPORT PluginCallbackWithoutData UNITY_INTERFACE_API ManagedRenderEvent_GetAttachCallback() {
+	return ManagedRenderEvent_Attach;
+}
+
+extern "C" UNITY_INTERFACE_EXPORT PluginCallbackUpdate UNITY_INTERFACE_API ManagedRenderEvent_GetAttachForTextureUpdate() {
+	return ManagedRenderEvent_AttachTextureUpdate;
+}
+
+#if 0
+extern "C" UNITY_INTERFACE_EXPORT PluginCallback UNITY_INTERFACE_API ManagedRenderEvent_GetCallback() {
+	return ManagedRenderEvent_MakeCall;
 }
 
 #define MAKE_EXPORT_CALL_0(sig, ret) extern "C" UNITY_INTERFACE_EXPORT ret UNITY_INTERFACE_API ManagedRenderEvent_Call_##sig(void* funcPtr) {\
@@ -86,8 +113,6 @@ extern "C" UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API ManagedRenderEvent_Se
 	AttachCurrentThread();\
 	return ((CallbackFunc)funcPtr)(a, b, c, d);\
 }
-
-typedef void* intptr;
 
 extern "C" UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API ManagedRenderEvent_Call_v(void* funcPtr) {
 	if (funcPtr == nullptr) return;
@@ -127,16 +152,4 @@ static void UNITY_INTERFACE_API ManagedRenderEvent_MakeCall(int32_t eventId, voi
 	AttachCurrentThread();
 	cbData->callbackPtr(cbData->eventId, cbData->addData);
 }
-
-static void UNITY_INTERFACE_API ManagedRenderEvent_Attach(int32_t eventId) {
-	AttachCurrentThread();
-}
-
-extern "C" UNITY_INTERFACE_EXPORT PluginCallbackWithoutData UNITY_INTERFACE_API ManagedRenderEvent_GetAttachCallback() {
-	return ManagedRenderEvent_Attach;
-}
-
-extern "C" UNITY_INTERFACE_EXPORT PluginCallback UNITY_INTERFACE_API ManagedRenderEvent_GetCallback() {
-	return ManagedRenderEvent_MakeCall;
-}
-
+#endif
