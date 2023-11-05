@@ -30,5 +30,5 @@ Then you can just use extension method for CommandBuffer like usual. Bonus point
 
 ### But, wait...
 - Q: Couldn't you just call `mono_thread_attach(rootDomain)` once from gfx thread and don't wrap every call?
-- A: Yes, you can, I'am just too lazy to go this way, because this require to execute command buffer before any other buffer, and this could be a pain to do. Feel free to fork
+- A: Yes, you can< and it's implemented as default behaviour. Make sure you don't run C# in graphics thread before ManagedRenderEvent.IsInitialized (or call Initialize() by yourself).
 
