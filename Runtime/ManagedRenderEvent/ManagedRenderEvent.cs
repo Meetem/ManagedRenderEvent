@@ -85,7 +85,7 @@ namespace ManagedRender
         }
     #endif
         
-    #if UNITY_EDITOR
+    //#if UNITY_EDITOR
         public static void IssuePluginEventAndData(this CommandBuffer cmdBuffer, RenderPluginDelegate @delegate, int eventId, IntPtr data)
         {
             if (!@delegate.Method.IsStatic)
@@ -103,6 +103,6 @@ namespace ManagedRender
             var funcPtr = Marshal.GetFunctionPointerForDelegate(@delegate);
             cmdBuffer.IssuePluginCustomTextureUpdateV2(funcPtr, texture, userData);
         }
-    #endif
+    //#endif
     }
 }
