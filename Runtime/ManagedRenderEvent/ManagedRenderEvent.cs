@@ -7,11 +7,13 @@ using UnityEngine.Rendering;
 namespace ManagedRender
 {
     public delegate void RenderPluginDelegate(int eventId, IntPtr data);
+    public delegate void RenderPluginDelegateWithoutData(int eventId);
 
     public static class ManagedRenderEvent
     {
         private static HashSet<RenderPluginDelegate> delegateHolder = new HashSet<RenderPluginDelegate>();
         private static HashSet<CustomTextureUpdateV2> delegateHolder2 = new HashSet<CustomTextureUpdateV2>();
+        private static HashSet<RenderPluginDelegateWithoutData> delegateHolder3 = new HashSet<RenderPluginDelegateWithoutData>();
         
         private const string _pluginName = "ManagedRenderEvent";
             
@@ -86,6 +88,15 @@ namespace ManagedRender
     #endif
         
     //#if UNITY_EDITOR
+        public static void IssuePluginEvent(RenderPluginDelegateWithoutData @delegate, int eventId)
+        {
+            if (!@delegate.Method.IsStatic)
+                delegateHolder3.Add(@delegate);
+
+            var funcPtr = Marshal.GetFunctionPointerForDelegate(@delegate);
+            GL.IssuePluginEvent(funcPtr, eventId);
+        }
+
         public static void IssuePluginEventAndData(this CommandBuffer cmdBuffer, RenderPluginDelegate @delegate, int eventId, IntPtr data)
         {
             if (!@delegate.Method.IsStatic)
