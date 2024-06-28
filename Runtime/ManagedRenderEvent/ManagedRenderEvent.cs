@@ -86,6 +86,13 @@ namespace ManagedRender
             
         }
     #endif
+
+        public static void AllowSharpCallbacks(this CommandBuffer cmdBuffer)
+        {
+            #if UNITY_EDITOR
+            cmdBuffer.IssuePluginEvent(ManagedRenderEvent_GetAttachCallback(), 0);
+            #endif
+        }
         
     //#if UNITY_EDITOR
         public static void IssuePluginEvent(RenderPluginDelegateWithoutData @delegate, int eventId)
